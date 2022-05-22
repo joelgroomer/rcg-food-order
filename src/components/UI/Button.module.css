@@ -1,0 +1,12 @@
+.btn {
+  color: brown;
+  background-color: white;
+  border-color: brown;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+}
+
+.btn-fill {
+  color: white;
+  background-color: brown;
+}

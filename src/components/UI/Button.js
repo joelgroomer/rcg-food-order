@@ -1,5 +1,17 @@
 import React from 'react';
+import styles from './Button.module.css';
 
-const Button = props => {};
+const Button = props => {
+  return (
+    <button
+      className={`${styles.btn} ${props.fill ? styles['btn-fill'] : ''} ${
+        props.className
+      }`}
+      onClick={props.onClick}
+    >
+      {props.children}
+    </button>
+  );
+};
 
 export default Button;
