@@ -1,62 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer } from 'react';
 
 const CartContext = React.createContext({
   items: [],
-  addItem: () => {},
-  removeItem: () => {},
+  itemCount: 0,
+  addItem: (item, qty) => {},
+  removeItem: (itemId, qty) => {},
 });
+export default CartContext;
 
-const CartContextProvider = props => {
-  const [items, setItems] = useState();
-
-  useEffect(() => {
-    const storedCart = localStorage.getItem('storedCart');
-
-    if (storedCart) {
-      setItems(storedCart);
-    }
-  }, []);
+export const CartContextProvider = props => {
+  const [cartState, dispatchCart] = useReducer(cartReducer, {
+    items: [],
+    itemCount: 0,
+  });
 
   const addItem = (item, qty) => {
-    setItems(prevItems => {
-      let found = false;
-      for (const existingItem of prevItems) {
-        if (existingItem.id === item.id) {
-          found = true;
-          existingItem.qty += qty;
-          break;
-        }
-      }
-
-      if (!found) {
-        prevItems.append({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          qty: item.qty,
-        });
-      }
-
-      return prevItems;
-    });
+    dispatchCart({ type: 'ADD_TO_CART', item: item, qty: qty });
   };
 
-  const removeItem = (item, qty) => {
-    setItems(prevItems => {
-      for (const existingItem of prevItems) {
-        if (existingItem.id === item.id) {
-          existingItem.qty -= qty;
-          if (existingItem.qty < 0) existingItem.qty = 0;
-        }
-      }
-      return prevItems;
-    });
+  const removeItem = (itemId, qty) => {
+    dispatchCart({ type: 'REM_FROM_CART', itemId: itemId, qty: qty });
   };
 
   return (
     <CartContext.Provider
       value={{
-        items: [],
+        items: cartState.items,
+        itemCount: cartState.itemCount,
         addItem: addItem,
         removeItem: removeItem,
       }}
@@ -66,4 +36,53 @@ const CartContextProvider = props => {
   );
 };
 
-export default CartContext;
+const cartReducer = (state, action) => {
+  if (action.type === 'ADD_TO_CART') {
+    let found = false;
+    let newItems = [];
+    for (const existingItem of state.items) {
+      if (existingItem.id === action.item.id) {
+        found = true;
+        newItems.push({
+          id: existingItem.id,
+          name: existingItem.name,
+          price: existingItem.price,
+          qty: existingItem.qty + action.qty,
+        });
+      } else {
+        newItems.push(existingItem);
+      }
+    }
+
+    if (!found) {
+      newItems.push({
+        id: action.item.id,
+        name: action.item.name,
+        price: action.item.price,
+        qty: action.qty,
+      });
+    }
+
+    return { items: newItems, itemCount: itemCountFor(newItems) };
+  } else if (action.type === 'REM_FROM_CART') {
+    let newItems = [];
+    for (const existingItem of state.items) {
+      if (existingItem.id === action.itemId) {
+        existingItem.qty -= action.qty;
+        if (existingItem.qty <= 0) continue;
+      }
+      newItems.push(existingItem);
+    }
+    return { items: newItems, itemCount: itemCountFor(newItems) };
+  }
+
+  return { items: [], itemCount: 0 };
+};
+
+const itemCountFor = obj => {
+  let count = 0;
+  for (const o of obj) {
+    count += o.qty;
+  }
+  return count;
+};
